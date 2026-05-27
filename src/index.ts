@@ -54,7 +54,7 @@ export async function generate(config: SvelteKitOpenAPIConfig = {}): Promise<Gen
   }
 
   // 4. Parse all routes
-  const routeInfos = parseAllRoutes(project, routes, resolvedConfig);
+  const routeInfos = parseAllRoutes(project, routes, resolvedConfig, schemaExtractor);
 
   // 5. Link schema refs to component names
   for (const route of routeInfos) {

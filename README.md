@@ -110,7 +110,7 @@ Everything below is detected automatically from your `+server.ts` files via [ts-
 | Route paths | Filesystem conventions (`src/routes/api/v1/users/+server.ts` &rarr; `/api/v1/users`) |
 | HTTP methods | Named exports (`export const GET`, `export const POST`, etc.) |
 | Path params | Directory names (`[id]` &rarr; `{id}`, `[[optional]]`, `[...rest]`) |
-| Query params | `event.url.searchParams.get('name')` calls |
+| Query params | `event.url.searchParams.get('name')` calls (all typed as `string`, all optional) — or [Zod-typed](#zod-typed-query-parameters) |
 | Request body fields | `const { a, b } = await event.request.json()` destructuring |
 | Status codes | `json(data, { status: 201 })` calls |
 | Auth requirements | `requireAuth(event)` / `requireRole(event, 'admin')` patterns |
@@ -161,6 +161,38 @@ This produces a fully documented JSON Schema component:
 | Validation | `.parse()` and `.safeParse()` detection in route handlers |
 
 Schemas are registered as named components via `.openapi('Name')` and referenced with `$ref` in the output.
+
+#### Zod-typed Query Parameters
+
+Query parameters are also typed when you use the `Schema.parse(Object.fromEntries(url.searchParams))` pattern inline in a route handler:
+
+```ts
+// src/routes/api/products/+server.ts
+const querySchema = z.object({
+  page: z.number().int().optional().describe('Page number (1-based)'),
+  limit: z.number().int().optional().describe('Max results per page'),
+  search: z.string().optional(),
+  inStock: z.boolean(),
+});
+
+export const GET: RequestHandler = async ({ url }) => {
+  const query = querySchema.parse(Object.fromEntries(url.searchParams));
+  // ...
+};
+```
+
+This produces properly typed query parameters — with correct types, required/optional status, and descriptions — instead of all-`string`, all-optional params:
+
+```json
+"parameters": [
+  { "name": "page",    "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Page number (1-based)" },
+  { "name": "limit",   "in": "query", "required": false, "schema": { "type": "integer" }, "description": "Max results per page" },
+  { "name": "search",  "in": "query", "required": false, "schema": { "type": "string" } },
+  { "name": "inStock", "in": "query", "required": true,  "schema": { "type": "boolean" } }
+]
+```
+
+The schema variable can be defined inline in the route file or imported from a schema file already listed in `schemaFiles`. Both `.parse()` and `.safeParse()` are detected. This pattern takes precedence only when no `searchParams.get()` calls are present in the same handler.
 
 ### Tier 3 — Fallback
 

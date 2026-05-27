@@ -2,7 +2,7 @@ import { Project, Node, SyntaxKind, type SourceFile, type CallExpression } from 
 import fg from 'fast-glob';
 import type { SchemaComponent } from '../types.js';
 
-interface JsonSchema {
+export interface JsonSchema {
   type?: string | string[];
   properties?: Record<string, JsonSchema>;
   required?: string[];
@@ -67,7 +67,12 @@ export class SchemaExtractor {
     return this.components;
   }
 
-  private extractFromSourceFile(sourceFile: SourceFile): void {
+  /**
+   * Extract schemas from a single source file (e.g. a route file with inline Zod schemas).
+   * Adds any found schemas to the variable registry so they can be looked up by name.
+   * Does NOT register them as named components unless they have .openapi('Name').
+   */
+  extractFromSourceFile(sourceFile: SourceFile): void {
     // Find all variable declarations that are Zod schemas
     for (const stmt of sourceFile.getStatements()) {
       if (!Node.isVariableStatement(stmt)) continue;
