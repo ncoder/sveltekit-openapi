@@ -1,62 +1,63 @@
 {
-  "name": "@sveltekit-openapi/core",
-  "version": "0.3.0",
-  "description": "Auto-generate OpenAPI 3.1 docs from SvelteKit API routes",
-  "type": "module",
-  "main": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
-  "bin": {
-    "sveltekit-openapi": "dist/cli.mjs"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.mts",
-      "import": "./dist/index.mjs"
+    "name": "@sveltekit-openapi/core",
+    "version": "0.3.0",
+    "description": "Auto-generate OpenAPI 3.1 docs from SvelteKit API routes",
+    "type": "module",
+    "main": "./dist/index.mjs",
+    "types": "./dist/index.d.mts",
+    "bin": {
+        "sveltekit-openapi": "dist/cli.mjs"
     },
-    "./vite": {
-      "types": "./dist/vite.d.mts",
-      "import": "./dist/vite.mjs"
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.mts",
+            "import": "./dist/index.mjs"
+        },
+        "./vite": {
+            "types": "./dist/vite.d.mts",
+            "import": "./dist/vite.mjs"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsdown",
+        "prepare": "npm run build",
+        "dev": "tsdown --watch",
+        "test": "vitest run",
+        "test:watch": "vitest"
+    },
+    "keywords": [
+        "sveltekit",
+        "openapi",
+        "swagger",
+        "api",
+        "documentation",
+        "typescript"
+    ],
+    "engines": {
+        "node": ">=20"
+    },
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/moo3/sveltekit-openapi.git"
+    },
+    "dependencies": {
+        "commander": "^13.1.0",
+        "fast-glob": "^3.3.3",
+        "openapi3-ts": "^4.5.0",
+        "ts-morph": "^25.0.0",
+        "yaml": "^2.7.0"
+    },
+    "devDependencies": {
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1",
+        "@types/node": "^25.5.2",
+        "semantic-release": "^25.0.3",
+        "tsdown": "^0.21.7",
+        "typescript": "^5.8.0",
+        "vitest": "^3.1.0"
     }
-  },
-  "files": [
-    "dist"
-  ],
-  "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "test": "vitest run",
-    "test:watch": "vitest"
-  },
-  "keywords": [
-    "sveltekit",
-    "openapi",
-    "swagger",
-    "api",
-    "documentation",
-    "typescript"
-  ],
-  "engines": {
-    "node": ">=20"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/moo3/sveltekit-openapi.git"
-  },
-  "dependencies": {
-    "commander": "^13.1.0",
-    "fast-glob": "^3.3.3",
-    "openapi3-ts": "^4.5.0",
-    "ts-morph": "^25.0.0",
-    "yaml": "^2.7.0"
-  },
-  "devDependencies": {
-    "@semantic-release/changelog": "^6.0.3",
-    "@semantic-release/git": "^10.0.1",
-    "@types/node": "^25.5.2",
-    "semantic-release": "^25.0.3",
-    "tsdown": "^0.21.7",
-    "typescript": "^5.8.0",
-    "vitest": "^3.1.0"
-  }
 }
