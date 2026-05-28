@@ -127,8 +127,8 @@ export class SchemaExtractor {
       const obj = expr.getExpression();
       const method = expr.getName();
 
-      // z.something()
-      if (obj.getText() === 'z') {
+      // z.something() OR z.coerce.something()
+      if (obj.getText() === 'z' || obj.getText() === 'z.coerce') {
         return this.handleZodBaseType(method, call);
       }
 
@@ -188,7 +188,8 @@ export class SchemaExtractor {
 
         const firstArg = args[0];
         if (Node.isArrayLiteralExpression(firstArg)) {
-          const values = firstArg.getElements()
+          const values = firstArg
+            .getElements()
             .filter((e): e is import('ts-morph').StringLiteral => Node.isStringLiteral(e))
             .map((e) => e.getLiteralValue());
           return { type: 'string', enum: values };
@@ -214,17 +215,30 @@ export class SchemaExtractor {
 
   private zodTypeToSchema(method: string): JsonSchema | undefined {
     switch (method) {
-      case 'string': return { type: 'string' };
-      case 'number': return { type: 'number' };
-      case 'boolean': return { type: 'boolean' };
-      case 'integer': return { type: 'integer' };
-      case 'any': return {};
-      case 'unknown': return {};
-      case 'null': return { type: 'null' as string };
-      case 'undefined': return {};
-      case 'void': return {};
-      case 'date': return { type: 'string', format: 'date-time' };
-      default: return undefined;
+      case 'string':
+        return { type: 'string' };
+      case 'number':
+        return { type: 'number' };
+      case 'boolean':
+        return { type: 'boolean' };
+      case 'email':
+        return { type: 'string', format: 'email' };
+      case 'integer':
+        return { type: 'integer' };
+      case 'any':
+        return {};
+      case 'unknown':
+        return {};
+      case 'null':
+        return { type: 'null' as string };
+      case 'undefined':
+        return {};
+      case 'void':
+        return {};
+      case 'date':
+        return { type: 'string', format: 'date-time' };
+      default:
+        return undefined;
     }
   }
 
@@ -278,9 +292,7 @@ export class SchemaExtractor {
       case 'nullable':
         return {
           ...schema,
-          type: Array.isArray(schema.type)
-            ? [...schema.type, 'null']
-            : schema.type ? [schema.type, 'null'] : ['null'],
+          type: Array.isArray(schema.type) ? [...schema.type, 'null'] : schema.type ? [schema.type, 'null'] : ['null'],
         };
 
       case 'default': {
