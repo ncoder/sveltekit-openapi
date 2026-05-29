@@ -82,7 +82,8 @@ export class SchemaExtractor {
         if (!init) continue;
 
         const text = init.getText();
-        if (!text.startsWith('z.')) continue;
+        const rootToken = text.split('.')[0];
+        if (!text.startsWith('z.') && !this.variableSchemas.has(rootToken)) continue;
 
         const schema = this.parseZodExpression(init);
         if (!schema) continue;
@@ -114,6 +115,11 @@ export class SchemaExtractor {
     if (Node.isPropertyAccessExpression(node)) {
       const name = node.getName();
       return this.zodTypeToSchema(name);
+    }
+
+    // Identifier — look up a previously-registered schema variable (e.g. ImportedSchema)
+    if (Node.isIdentifier(node)) {
+      return this.variableSchemas.get(text);
     }
 
     return undefined;
@@ -288,6 +294,12 @@ export class SchemaExtractor {
       case 'optional':
         // Mark as optional — handled by parent object processing
         return schema;
+
+      case 'partial': {
+        // Make all properties optional by removing the required array
+        const { required: _, ...rest } = schema;
+        return rest;
+      }
 
       case 'nullable':
         return {
