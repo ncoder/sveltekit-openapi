@@ -7,8 +7,10 @@ export interface JsonSchema {
   properties?: Record<string, JsonSchema>;
   required?: string[];
   items?: JsonSchema;
+  additionalProperties?: JsonSchema;
   enum?: unknown[];
   format?: string;
+  pattern?: string;
   minimum?: number;
   maximum?: number;
   minLength?: number;
@@ -152,6 +154,16 @@ export class SchemaExtractor {
         return this.handleZodBaseType(method, call);
       }
 
+      // z.iso.date(), z.iso.time(), z.iso.datetime()
+      if (obj.getText() === 'z.iso') {
+        switch (method) {
+          case 'date': return { type: 'string', format: 'date' };
+          case 'time': return { type: 'string', format: 'time' };
+          case 'datetime': return { type: 'string', format: 'date-time' };
+          default: return undefined;
+        }
+      }
+
       // Chained call: inner.method()
       const innerSchema = this.parseZodExpression(obj);
       if (!innerSchema) return undefined;
@@ -282,10 +294,23 @@ export class SchemaExtractor {
         return { ...schema, format: 'uuid' };
       case 'datetime':
         return { ...schema, format: 'date-time' };
+      case 'date':
+        return { ...schema, format: 'date' };
+      case 'time':
+        return { ...schema, format: 'time' };
       case 'ip':
         return { ...schema, format: 'ipv4' };
       case 'int':
         return { ...schema, type: 'integer' };
+
+      case 'regex': {
+        if (args.length > 0 && Node.isRegularExpressionLiteral(args[0])) {
+          const raw = args[0].getText(); // e.g. /^\d{2}:\d{2}$/
+          const pattern = raw.slice(1, raw.lastIndexOf('/'));
+          return { ...schema, pattern };
+        }
+        return schema;
+      }
 
       case 'min': {
         const val = this.extractNumericArg(args);
