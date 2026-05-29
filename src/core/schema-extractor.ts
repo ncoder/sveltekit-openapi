@@ -26,6 +26,7 @@ export interface JsonSchema {
 export class SchemaExtractor {
   private components = new Map<string, JsonSchema>();
   private variableSchemas = new Map<string, JsonSchema>();
+  private visitedFiles = new Set<string>();
 
   constructor(private project: Project) {}
 
@@ -73,6 +74,19 @@ export class SchemaExtractor {
    * Does NOT register them as named components unless they have .openapi('Name').
    */
   extractFromSourceFile(sourceFile: SourceFile): void {
+    // Guard against re-processing the same file (e.g. via circular imports)
+    const filePath = sourceFile.getFilePath();
+    if (this.visitedFiles.has(filePath)) return;
+    this.visitedFiles.add(filePath);
+
+    // Process local imports first so referenced schemas are in variableSchemas
+    for (const importDecl of sourceFile.getImportDeclarations()) {
+      const importedFile = importDecl.getModuleSpecifierSourceFile();
+      if (importedFile && !importedFile.getFilePath().includes('node_modules')) {
+        this.extractFromSourceFile(importedFile);
+      }
+    }
+
     // Find all variable declarations that are Zod schemas
     for (const stmt of sourceFile.getStatements()) {
       if (!Node.isVariableStatement(stmt)) continue;
