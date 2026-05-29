@@ -1,6 +1,7 @@
 import { Project } from 'ts-morph';
 import fs from 'fs/promises';
 import path from 'path';
+import { existsSync } from 'fs';
 import { stringify as yamlStringify } from 'yaml';
 import { scanRoutes } from './core/scanner.js';
 import { parseAllRoutes } from './core/parser.js';
@@ -36,14 +37,13 @@ export async function generate(config: SvelteKitOpenAPIConfig = {}): Promise<Gen
   // 1. Scan for route files
   const routes = await scanRoutes(resolvedConfig);
 
-  // 2. Initialize ts-morph project
-  const project = new Project({
-    skipAddingFilesFromTsConfig: true,
-    compilerOptions: {
-      allowJs: true,
-      skipLibCheck: true,
-    },
-  });
+  // 2. Initialize ts-morph project — use tsconfig.json if present so path aliases are resolved
+  const tsconfigPath = path.resolve('tsconfig.json');
+  const project = new Project(
+    existsSync(tsconfigPath)
+      ? { tsConfigFilePath: tsconfigPath, skipAddingFilesFromTsConfig: true }
+      : { compilerOptions: { allowJs: true, skipLibCheck: true } },
+  );
 
   // 3. Extract Zod schemas if schema files are configured
   let schemaComponents: SchemaComponent[] = [];
