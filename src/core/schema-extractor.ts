@@ -164,6 +164,14 @@ export class SchemaExtractor {
 
   private handleZodBaseType(method: string, call: CallExpression): JsonSchema | undefined {
     switch (method) {
+      case 'record': {
+        const args = call.getArguments();
+        // z.record(valueSchema) — single arg, or z.record(keySchema, valueSchema) — two args (Zod v4)
+        const valueArg = args.length >= 2 ? args[1] : args[0];
+        const valueSchema = valueArg ? this.parseZodExpression(valueArg) : undefined;
+        return { type: 'object', ...(valueSchema ? { additionalProperties: valueSchema } : {}) };
+      }
+
       case 'object': {
         const args = call.getArguments();
         if (args.length === 0) return { type: 'object' };
