@@ -194,6 +194,27 @@ This produces properly typed query parameters — with correct types, required/o
 
 The schema variable can be defined inline in the route file or imported from a schema file already listed in `schemaFiles`. Both `.parse()` and `.safeParse()` are detected. This pattern takes precedence only when no `searchParams.get()` calls are present in the same handler.
 
+#### Zod-typed Response Bodies
+
+Response bodies are typed when you return the result of a Zod schema parse:
+
+```ts
+// src/routes/api/users/+server.ts
+export const GET: RequestHandler = async () => {
+  const users = await getAllUsers();
+  return json(
+    UsersListResponseSchema.parse({
+      data: users.map(serializeUser),
+      meta: { total: users.length },
+    }),
+  );
+};
+```
+
+This produces a `$ref` to the named response component instead of guessing `data: string` from the object literal.
+
+Request-body schema detection only considers `.parse(await request.json())` — response `.parse()` calls in the same handler do not override the request schema.
+
 ### Tier 3 — Fallback
 
 Endpoints without type information are still documented — request/response bodies are typed as `object`. You get the route, method, params, and status codes regardless.

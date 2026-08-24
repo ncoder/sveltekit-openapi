@@ -1,5 +1,6 @@
 import { Node, SyntaxKind } from 'ts-morph';
 import type { RequestBodyInfo } from '../types.js';
+import { isRequestJsonParseCall, schemaRefFromParseCall } from './schema-ref.js';
 
 /**
  * Detect request body usage from `event.request.json()` calls.
@@ -7,7 +8,7 @@ import type { RequestBodyInfo } from '../types.js';
  * Patterns detected:
  *   const { a, b } = await event.request.json()  → fields: [a, b]
  *   const body = await event.request.json()       → generic object
- *   schema.parse(body)                            → links to schema (tier 2)
+ *   schema.parse(await request.json())            → links to schema (tier 2)
  */
 export function analyzeRequestBody(body: Node): RequestBodyInfo | undefined {
   let hasRequestJson = false;
@@ -40,14 +41,8 @@ export function analyzeRequestBody(body: Node): RequestBodyInfo | undefined {
         }
       }
 
-      // Check for schema.parse(body) or schema.safeParse(body) patterns
-      const exprText = node.getExpression().getText();
-      if (exprText.endsWith('.parse') || exprText.endsWith('.safeParse')) {
-        const schemaName = exprText.replace(/\.(safe)?[Pp]arse$/, '');
-        // Only capture simple identifiers (e.g. registerSchema, not complex expressions)
-        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(schemaName)) {
-          schemaRef = schemaName;
-        }
+      if (isRequestJsonParseCall(node)) {
+        schemaRef = schemaRefFromParseCall(node);
       }
     }
   });

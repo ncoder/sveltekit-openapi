@@ -97,6 +97,18 @@ describe('analyzeRequestBody', () => {
     expect(result!.fields).toHaveLength(0); // no destructured fields
     expect(result!.schemaRef).toBeUndefined();
   });
+
+  it('links request body schema from Schema.parse(await request.json())', () => {
+    const body = getHandlerBody(path.join(fixtures, 'zod-parse/+server.ts'), 'POST');
+    const result = analyzeRequestBody(body!);
+    expect(result?.schemaRef).toBe('CreateUserBodySchema');
+  });
+
+  it('ignores response Schema.parse when resolving request body schema', () => {
+    const body = getHandlerBody(path.join(fixtures, 'zod-parse/+server.ts'), 'POST');
+    const result = analyzeRequestBody(body!);
+    expect(result?.schemaRef).not.toBe('UserResponseSchema');
+  });
 });
 
 describe('analyzeResponses', () => {
@@ -124,5 +136,13 @@ describe('analyzeResponses', () => {
     const result = analyzeResponses(body!);
     expect(result).toHaveLength(1);
     expect(result[0].statusCode).toBe(200);
+  });
+
+  it('links response schema from return json(Schema.parse(...))', () => {
+    const body = getHandlerBody(path.join(fixtures, 'zod-parse/+server.ts'), 'POST');
+    const result = analyzeResponses(body!);
+    const created = result.find((r) => r.statusCode === 201);
+    expect(created?.schemaRef).toBe('UserResponseSchema');
+    expect(created?.schema).toBeUndefined();
   });
 });

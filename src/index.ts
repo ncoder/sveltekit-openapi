@@ -60,15 +60,15 @@ export async function generate(config: SvelteKitOpenAPIConfig = {}): Promise<Gen
   for (const route of routeInfos) {
     for (const method of route.methods) {
       if (method.requestBody?.schemaRef) {
-        const varSchema = schemaExtractor.getSchemaForVariable(method.requestBody.schemaRef);
-        if (varSchema) {
-          // Find the component name for this variable
-          for (const [compName, compSchema] of schemaExtractor.getComponents()) {
-            if (compSchema === varSchema) {
-              method.requestBody.schemaRef = compName;
-              break;
-            }
-          }
+        method.requestBody.schemaRef = resolveSchemaRefName(
+          method.requestBody.schemaRef,
+          schemaExtractor,
+        );
+      }
+
+      for (const response of method.responses) {
+        if (response.schemaRef) {
+          response.schemaRef = resolveSchemaRefName(response.schemaRef, schemaExtractor);
         }
       }
     }
@@ -96,6 +96,21 @@ export async function generate(config: SvelteKitOpenAPIConfig = {}): Promise<Gen
     routeCount: routeInfos.length,
     endpointCount,
   };
+}
+
+function resolveSchemaRefName(
+  schemaRef: string,
+  schemaExtractor: SchemaExtractor,
+): string {
+  const varSchema = schemaExtractor.getSchemaForVariable(schemaRef);
+  if (varSchema) {
+    for (const [compName, compSchema] of schemaExtractor.getComponents()) {
+      if (compSchema === varSchema) {
+        return compName;
+      }
+    }
+  }
+  return schemaRef;
 }
 
 function resolveConfig(config: SvelteKitOpenAPIConfig): SvelteKitOpenAPIConfig {

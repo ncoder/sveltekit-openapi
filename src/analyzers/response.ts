@@ -1,5 +1,6 @@
 import { Node, SyntaxKind } from 'ts-morph';
 import type { ResponseInfo } from '../types.js';
+import { schemaRefFromParseCall } from './schema-ref.js';
 
 const STATUS_DESCRIPTIONS: Record<number, string> = {
   200: 'Success',
@@ -18,9 +19,10 @@ const STATUS_DESCRIPTIONS: Record<number, string> = {
  * Extract response information from `return json(...)` calls.
  *
  * Detects:
- *   return json(data)                    → 200, generic object
- *   return json(data, { status: 201 })   → 201, generic object
+ *   return json(data)                              → 200, generic object
+ *   return json(data, { status: 201 })             → 201, generic object
  *   return json({ message: '...' }, { status: 404 }) → 404, error schema
+ *   return json(ResponseSchema.parse(payload))     → $ref to Zod component (tier 2)
  */
 export function analyzeResponses(body: Node): ResponseInfo[] {
   const responses: ResponseInfo[] = [];
@@ -59,9 +61,14 @@ export function analyzeResponses(body: Node): ResponseInfo[] {
 
     // Analyze first argument to determine response schema
     const firstArg = args[0];
+    let schemaRef: string | undefined;
     let schema: Record<string, unknown> | undefined;
 
-    if (Node.isObjectLiteralExpression(firstArg)) {
+    if (Node.isCallExpression(firstArg)) {
+      schemaRef = schemaRefFromParseCall(firstArg);
+    }
+
+    if (!schemaRef && Node.isObjectLiteralExpression(firstArg)) {
       const props = firstArg.getProperties();
       const propNames = props
         .filter((p): p is import('ts-morph').PropertyAssignment => Node.isPropertyAssignment(p))
@@ -89,7 +96,7 @@ export function analyzeResponses(body: Node): ResponseInfo[] {
       }
     }
 
-    if (!schema) {
+    if (!schemaRef && !schema) {
       schema = { type: 'object' };
     }
 
@@ -97,6 +104,7 @@ export function analyzeResponses(body: Node): ResponseInfo[] {
       statusCode,
       description: STATUS_DESCRIPTIONS[statusCode] || `Status ${statusCode}`,
       schema,
+      schemaRef,
     });
   });
 

@@ -99,4 +99,25 @@ describe('generate (integration)', () => {
 
     await fs.unlink(outputPath);
   });
+
+  it('links request and response schema refs from Zod parse calls', async () => {
+    const outputPath = path.join(os.tmpdir(), `openapi-test-${Date.now()}.json`);
+    const schemaFile = path.join(fixturesDir, 'zod-schema/response-schemas.ts');
+
+    const result = await generate({
+      routesDir: fixturesDir,
+      output: outputPath,
+      schemaFiles: [schemaFile],
+    });
+
+    const post = result.document.paths['/zod-parse']?.post;
+    expect(post?.requestBody?.content?.['application/json']?.schema).toEqual({
+      $ref: '#/components/schemas/CreateUserBodySchema',
+    });
+    expect(post?.responses?.['201']?.content?.['application/json']?.schema).toEqual({
+      $ref: '#/components/schemas/UserResponseSchema',
+    });
+
+    await fs.unlink(outputPath);
+  });
 });
